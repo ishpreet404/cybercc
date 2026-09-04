@@ -1,0 +1,81 @@
+{
+  "modelType": "RandomForestClassifier",
+  "version": "1.0.0",
+  "numTrees": 5,
+  "classes": ["NORMAL", "FOOTSTEP_HUMAN", "VEHICLE", "ENVIRONMENTAL"],
+  "featureOrder": [
+    "rms",
+    "peak",
+    "peakToPeak",
+    "variance",
+    "dominantFrequency",
+    "spectralEnergy",
+    "spectralCentroid",
+    "interPeakInterval"
+  ],
+  "trees": [
+    {
+      "feature": "rms",
+      "threshold": 0.08,
+      "left": { "leaf": true, "prediction": "NORMAL", "probs": [0.94, 0.02, 0.01, 0.03] },
+      "right": {
+        "feature": "dominantFrequency",
+        "threshold": 18.0,
+        "left": {
+          "feature": "interPeakInterval",
+          "threshold": 200.0,
+          "left": { "leaf": true, "prediction": "ENVIRONMENTAL", "probs": [0.05, 0.15, 0.10, 0.70] },
+          "right": { "leaf": true, "prediction": "FOOTSTEP_HUMAN", "probs": [0.02, 0.91, 0.03, 0.04] }
+        },
+        "right": {
+          "feature": "spectralEnergy",
+          "threshold": 0.50,
+          "left": { "leaf": true, "prediction": "ENVIRONMENTAL", "probs": [0.08, 0.12, 0.20, 0.60] },
+          "right": { "leaf": true, "prediction": "VEHICLE", "probs": [0.01, 0.04, 0.92, 0.03] }
+        }
+      }
+    },
+    {
+      "feature": "peak",
+      "threshold": 0.15,
+      "left": { "leaf": true, "prediction": "NORMAL", "probs": [0.91, 0.04, 0.02, 0.03] },
+      "right": {
+        "feature": "interPeakInterval",
+        "threshold": 350.0,
+        "left": {
+          "feature": "spectralCentroid",
+          "threshold": 25.0,
+          "left": { "leaf": true, "prediction": "FOOTSTEP_HUMAN", "probs": [0.03, 0.85, 0.05, 0.07] },
+          "right": { "leaf": true, "prediction": "VEHICLE", "probs": [0.02, 0.08, 0.86, 0.04] }
+        },
+        "right": {
+          "feature": "dominantFrequency",
+          "threshold": 12.0,
+          "left": { "leaf": true, "prediction": "FOOTSTEP_HUMAN", "probs": [0.01, 0.93, 0.02, 0.04] },
+          "right": { "leaf": true, "prediction": "ENVIRONMENTAL", "probs": [0.05, 0.15, 0.15, 0.65] }
+        }
+      }
+    },
+    {
+      "feature": "spectralEnergy",
+      "threshold": 0.05,
+      "left": { "leaf": true, "prediction": "NORMAL", "probs": [0.96, 0.01, 0.01, 0.02] },
+      "right": {
+        "feature": "variance",
+        "threshold": 0.012,
+        "left": {
+          "feature": "dominantFrequency",
+          "threshold": 15.0,
+          "left": { "leaf": true, "prediction": "FOOTSTEP_HUMAN", "probs": [0.04, 0.89, 0.02, 0.05] },
+          "right": { "leaf": true, "prediction": "VEHICLE", "probs": [0.02, 0.03, 0.90, 0.05] }
+        },
+        "right": {
+          "feature": "spectralCentroid",
+          "threshold": 30.0,
+          "left": { "leaf": true, "prediction": "VEHICLE", "probs": [0.01, 0.05, 0.89, 0.05] },
+          "right": { "leaf": true, "prediction": "ENVIRONMENTAL", "probs": [0.05, 0.10, 0.15, 0.70] }
+        }
+      }
+    }
+  ]
+}
