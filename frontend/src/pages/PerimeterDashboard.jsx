@@ -7,7 +7,6 @@ import VibrationChart from '../components/perimeter/VibrationChart';
 import AlertPanel from '../components/perimeter/AlertPanel';
 import EstimatedPosition from '../components/perimeter/EstimatedPosition';
 import CameraVerification from '../components/perimeter/CameraVerification';
-import Card from '../components/Card';
 import Button from '../components/Button';
 
 export const PerimeterDashboard = ({
@@ -28,68 +27,68 @@ export const PerimeterDashboard = ({
   const isPerimeterBreached = alertCount > 0;
 
   return (
-    <div className="space-y-6 font-mono">
+    <div className="space-y-5 font-mono">
       
-      {/* Top Threat & Health Stat HUD */}
+      {/* Top Threat & Health Stat HUD - Balanced Heights */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         
         {/* System Status */}
-        <div className={`p-3 border ${
+        <div className={`p-3 border flex flex-col justify-between h-24 ${
           isPerimeterBreached 
-            ? 'border-terminal-red bg-terminal-red/10 text-terminal-red' 
+            ? 'border-terminal-red bg-terminal-red/10 text-terminal-red shadow-[0_0_12px_rgba(255,51,68,0.2)]' 
             : 'border-terminal-green bg-terminal-green/5 text-terminal-green'
         }`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-terminal-muted uppercase tracking-widest font-bold">DEFENSE STATUS</span>
-            <Shield className="w-4 h-4" />
+            <span className="text-[10px] text-terminal-muted uppercase tracking-wider font-bold">DEFENSE STATUS</span>
+            <Shield className="w-4 h-4 flex-shrink-0" />
           </div>
-          <div className="text-lg sm:text-xl font-bold mt-1 tracking-wider">
+          <div className="text-base sm:text-lg font-bold tracking-wider leading-none">
             {isPerimeterBreached ? 'PERIMETER ALERT' : 'SECURE SENTRY'}
           </div>
-          <div className="text-[10px] text-terminal-muted mt-0.5">
-            {isPerimeterBreached ? `${alertCount} ACTIVE INTRUSION EVENT` : 'ALL SECTORS OPTIMAL'}
+          <div className="text-[10px] text-terminal-muted leading-none">
+            {isPerimeterBreached ? `${alertCount} ACTIVE THREAT CANDIDATE` : 'ALL SECTORS SECURED'}
           </div>
         </div>
 
         {/* Nodes Online */}
-        <div className="p-3 border border-terminal-border bg-terminal-surface text-gray-100">
+        <div className="p-3 border border-terminal-border bg-terminal-surface text-gray-100 flex flex-col justify-between h-24">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-terminal-muted uppercase tracking-widest font-bold">ONLINE NODES</span>
-            <Radio className="w-4 h-4 text-terminal-cyan" />
+            <span className="text-[10px] text-terminal-muted uppercase tracking-wider font-bold">ONLINE NODES</span>
+            <Radio className="w-4 h-4 text-terminal-cyan flex-shrink-0" />
           </div>
-          <div className="text-lg sm:text-xl font-bold mt-1 text-terminal-cyan">
-            {onlineCount} / {nodes.length}
+          <div className="text-base sm:text-lg font-bold text-terminal-cyan leading-none">
+            {onlineCount} / {nodes.length} ONLINE
           </div>
-          <div className="text-[10px] text-terminal-muted mt-0.5">
+          <div className="text-[10px] text-terminal-muted leading-none">
             LORA / WIFI / BLE MESH
           </div>
         </div>
 
         {/* 3-Point Sensor Corroboration */}
-        <div className="p-3 border border-terminal-border bg-terminal-surface text-gray-100">
+        <div className="p-3 border border-terminal-border bg-terminal-surface text-gray-100 flex flex-col justify-between h-24">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-terminal-muted uppercase tracking-widest font-bold">3-POINT REDUNDANCY</span>
-            <Activity className="w-4 h-4 text-terminal-amber" />
+            <span className="text-[10px] text-terminal-muted uppercase tracking-wider font-bold">3-POINT REDUNDANCY</span>
+            <Activity className="w-4 h-4 text-terminal-amber flex-shrink-0" />
           </div>
-          <div className="text-lg sm:text-xl font-bold mt-1 text-terminal-amber">
-            ACTIVE
+          <div className="text-base sm:text-lg font-bold text-terminal-amber leading-none">
+            SYNCHRONIZED
           </div>
-          <div className="text-[10px] text-terminal-muted mt-0.5">
+          <div className="text-[10px] text-terminal-muted leading-none">
             RADAR + DUAL ADXL345
           </div>
         </div>
 
         {/* Quick Demo Trigger */}
-        <div className="p-3 border border-terminal-amber/40 bg-terminal-amber/5 flex flex-col justify-between">
+        <div className="p-3 border border-terminal-amber/50 bg-terminal-amber/5 flex flex-col justify-between h-24">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-terminal-amber font-bold tracking-wider">HACKATHON DEMO</span>
-            <Zap className="w-4 h-4 text-terminal-amber animate-pulse" />
+            <Zap className="w-4 h-4 text-terminal-amber animate-pulse flex-shrink-0" />
           </div>
           <Button
             size="sm"
             variant="warning"
             onClick={onQuickDemo}
-            className="w-full mt-2 text-xs"
+            className="w-full text-[11px] py-1 leading-none h-8"
           >
             [ RUN 7-STEP DEMO ]
           </Button>
@@ -113,23 +112,15 @@ export const PerimeterDashboard = ({
       />
 
       {/* SECTION C & D: Live Sensor Deep View (Radar & Dual Seismic Oscilloscope) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Radar Range Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
         <RadarView node={selectedNode} />
-
-        {/* Dual Accelerometer Vibration Waveform & ML */}
         <VibrationChart node={selectedNode} />
       </div>
 
       {/* SECTION E & Extended Modalities: Localization, Camera & Alarms */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Local Two-Sensor Localization Plot */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
         <EstimatedPosition node={selectedNode} />
-
-        {/* Optical Camera Verification Feed */}
         <CameraVerification node={selectedNode} />
-
-        {/* Real-time Operator Alarms & Response */}
         <AlertPanel
           alerts={alerts}
           onAcknowledge={onAcknowledgeAlert}

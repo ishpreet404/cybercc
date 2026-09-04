@@ -11,103 +11,123 @@ export const EstimatedPosition = ({ node, fusion }) => {
   const isTriggered = radar.presence || s1Rms > 0.12 || s2Rms > 0.12;
 
   // Calculate position along baseline (Y) and depth (X)
-  const total = s1Rms + s2Rms;
-  const ratio = (s2Rms - s1Rms) / Math.max(0.01, total);
+  const total = Math.max(0.001, s1Rms + s2Rms);
+  const bias = (s2Rms - s1Rms) / total; // -1 (at s1) to +1 (at s2)
   
-  // Normalized Y [-0.8 to +0.8], where top is ADXL1 (-0.6), bottom is ADXL2 (+0.6)
-  const normY = Math.max(-0.7, Math.min(0.7, ratio * 1.5));
-  const normX = radar.distance ? Math.min(0.85, Math.max(0.2, radar.distance / 8.0)) : 0.5;
+  // Map to visual coordinates inside 400x240 SVG
+  // Sensor 1 at (90, 60), Sensor 2 at (90, 180). Baseline midpoint is (90, 120).
+  const s1X = 90, s1Y = 60;
+  const s2X = 90, s2Y = 180;
+  const originX = 90, originY = 120;
 
-  // Convert to percent for display
-  const targetTopPct = 50 + normY * 35; // 50% is center
-  const targetLeftPct = 50 + normX * 35;
-  const confidence = fusion?.confidence ? Math.round(fusion.confidence * 100) : (isTriggered ? 88 : 0);
+  // Intruder target coordinates:
+  const distMeters = radar.presence && radar.distance > 0 ? radar.distance : (3.5 / Math.sqrt(Math.max(0.02, total / 2)));
+  const clampedDist = Math.max(1.0, Math.min(8.0, distMeters));
+  
+  // Radial depth mapped to X: [130 to 350]
+  const targetX = originX + (clampedDist / 8.0) * 240;
+  // Lateral bias mapped to Y: [70 to 170]
+  const targetY = originY + bias * 45;
+
+  const confidence = fusion?.confidence ? Math.round(fusion.confidence * 100) : (isTriggered ? 89 : 0);
 
   return (
-    <Card title={`▸ LOCAL SENSING ENVELOPE & TWO-SENSOR LOCALIZATION : ${node ? node.nodeId : 'SELECT NODE'}`}>
-      <div className="space-y-3 font-mono">
+    <Card title={`▸ TWO-SENSOR RELATIVE LOCALIZATION : ${node ? node.nodeId : 'SELECT NODE'}`}>
+      <div className="space-y-3 font-mono flex-1 flex flex-col justify-between">
         
-        {/* Local 2D Sensing Area Box */}
-        <div className="relative w-full h-56 bg-terminal-black border border-terminal-border overflow-hidden">
+        {/* SVG Tactical 2D Coordinate Sensing Envelope */}
+        <div className="relative w-full h-56 bg-terminal-black border border-terminal-border overflow-hidden flex items-center justify-center">
           
-          {/* Circular Radar Distance Rings (2m, 4m, 6m, 8m) */}
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-terminal-green/10 pointer-events-none" />
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 w-60 h-60 rounded-full border border-terminal-green/15 pointer-events-none" />
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-dashed border-terminal-green/25 pointer-events-none" />
+          <svg viewBox="0 0 400 240" className="w-full h-full">
+            {/* Background grid */}
+            <defs>
+              <pattern id="localGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#141c26" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="400" height="240" fill="url(#localGrid)" />
 
-          {/* Inter-Sensor Baseline Axis */}
-          <div className="absolute left-10 top-10 bottom-10 w-0.5 bg-terminal-border border-l border-dashed border-terminal-muted flex flex-col justify-between items-center py-2 pointer-events-none">
-            {/* Sensor 1 Marker */}
-            <div className="relative -left-2 flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-terminal-green/20 border-2 border-terminal-green flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-terminal-green" />
-              </div>
-              <span className="text-[10px] font-bold text-terminal-green whitespace-nowrap bg-black/80 px-1 border border-terminal-green/40">
-                ADXL #1 ({spacing}m BASELINE)
-              </span>
-            </div>
+            {/* Radar Arc Distance Gates from origin (90, 120) */}
+            <path d="M 90 60 A 60 60 0 0 1 150 120 A 60 60 0 0 1 90 180" fill="none" stroke="#00ff66" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+            <path d="M 90 0 A 120 120 0 0 1 210 120 A 120 120 0 0 1 90 240" fill="none" stroke="#00ff66" strokeWidth="1" strokeDasharray="4 4" opacity="0.25" />
+            <path d="M 90 -60 A 180 180 0 0 1 270 120 A 180 180 0 0 1 90 300" fill="none" stroke="#00ff66" strokeWidth="1" opacity="0.2" />
+            <path d="M 90 -120 A 240 240 0 0 1 330 120 A 240 240 0 0 1 90 360" fill="none" stroke="#00ff66" strokeWidth="1" opacity="0.15" />
 
-            <div className="text-[9px] text-terminal-muted bg-terminal-black px-1 border border-terminal-border">
-              PROBE AXIS
-            </div>
+            {/* Range markers */}
+            <text x="145" y="115" fill="#4b5563" fontSize="8" fontFamily="monospace">2m</text>
+            <text x="205" y="115" fill="#4b5563" fontSize="8" fontFamily="monospace">4m</text>
+            <text x="265" y="115" fill="#4b5563" fontSize="8" fontFamily="monospace">6m</text>
+            <text x="325" y="115" fill="#4b5563" fontSize="8" fontFamily="monospace">8m</text>
 
-            {/* Sensor 2 Marker */}
-            <div className="relative -left-2 flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-terminal-cyan/20 border-2 border-terminal-cyan flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-terminal-cyan" />
-              </div>
-              <span className="text-[10px] font-bold text-terminal-cyan whitespace-nowrap bg-black/80 px-1 border border-terminal-cyan/40">
-                ADXL #2
-              </span>
-            </div>
-          </div>
+            {/* Inter-Sensor Baseline Axis */}
+            <line x1={s1X} y1={s1Y} x2={s2X} y2={s2Y} stroke="#374151" strokeWidth="2" strokeDasharray="4 2" />
 
-          {/* Estimated Human Target Position */}
-          {isTriggered ? (
-            <div
-              className="absolute z-20 flex flex-col items-center pointer-events-none transition-all duration-300"
-              style={{
-                left: `${targetLeftPct}%`,
-                top: `${targetTopPct}%`,
-                transform: 'translate(-50%, -50%)'
-              }}
-            >
-              <div className="relative flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-terminal-red/30 border-2 border-terminal-red animate-ping" />
-                <div className="absolute w-4 h-4 rounded-full bg-terminal-red flex items-center justify-center shadow-[0_0_12px_#ff3344]">
-                  <Crosshair className="w-3 h-3 text-white" />
-                </div>
-              </div>
+            {/* Chassis Node Origin Marker */}
+            <circle cx={originX} cy={originY} r="4" fill="#ffb000" />
+            <text x={originX - 8} y={originY + 3} fill="#ffb000" fontSize="8" fontFamily="monospace" textAnchor="end">NODE</text>
 
-              <div className="mt-1 px-2 py-0.5 bg-terminal-black/95 border border-terminal-red text-center shadow-lg">
-                <div className="text-[9px] font-bold text-terminal-red">
-                  ESTIMATED POSITION
-                </div>
-                <div className="text-[8px] text-gray-300">
-                  CONFIDENCE: {confidence}% | ~{radar.distance || 4.2}m
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-terminal-muted pointer-events-none">
-              [ STANDBY : SENSING AREA SECURE ]
-            </div>
-          )}
+            {/* Sensor 1 (Probe A) */}
+            <circle cx={s1X} cy={s1Y} r="6" fill="#00ff66" fillOpacity="0.2" stroke="#00ff66" strokeWidth="1.5" />
+            <circle cx={s1X} cy={s1Y} r="2" fill="#00ff66" />
+            <text x={s1X - 8} y={s1Y - 2} fill="#00ff66" fontSize="9" fontFamily="monospace" textAnchor="end" fontWeight="bold">ADXL-01</text>
+            <text x={s1X - 8} y={s1Y + 9} fill="#8b949e" fontSize="8" fontFamily="monospace" textAnchor="end">PROBE A</text>
 
-          {/* Overlay Tag */}
-          <div className="absolute bottom-2 right-2 text-[9px] text-terminal-muted bg-terminal-black/80 px-2 py-1 border border-terminal-border">
-            METHOD: DUAL-SEISMIC ATTENUATION + RADAR INTERSECTION
+            {/* Sensor 2 (Probe B) */}
+            <circle cx={s2X} cy={s2Y} r="6" fill="#00e5ff" fillOpacity="0.2" stroke="#00e5ff" strokeWidth="1.5" />
+            <circle cx={s2X} cy={s2Y} r="2" fill="#00e5ff" />
+            <text x={s2X - 8} y={s2Y - 2} fill="#00e5ff" fontSize="9" fontFamily="monospace" textAnchor="end" fontWeight="bold">ADXL-02</text>
+            <text x={s2X - 8} y={s2Y + 9} fill="#8b949e" fontSize="8" fontFamily="monospace" textAnchor="end">PROBE B</text>
+
+            {/* Baseline Distance Label */}
+            <text x={originX - 10} y={originY - 24} fill="#6b7280" fontSize="7" fontFamily="monospace" textAnchor="end">{spacing}m BASELINE</text>
+
+            {/* Estimated Target & 3-Point Triangulation Sightlines */}
+            {isTriggered ? (
+              <g>
+                {/* Connecting triangulation vectors to both probes and radar origin */}
+                <line x1={s1X} y1={s1Y} x2={targetX} y2={targetY} stroke="#00ff66" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+                <line x1={s2X} y1={s2Y} x2={targetX} y2={targetY} stroke="#00e5ff" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+                <line x1={originX} y1={originY} x2={targetX} y2={targetY} stroke="#ff3344" strokeWidth="1.2" strokeDasharray="4 2" opacity="0.8" />
+
+                {/* Target Ping Pulse */}
+                <circle cx={targetX} cy={targetY} r="14" fill="#ff3344" fillOpacity="0.2" stroke="#ff3344" strokeWidth="1.5">
+                  <animate attributeName="r" values="8;18;8" dur="1.8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.8s" repeatCount="indefinite" />
+                </circle>
+                <circle cx={targetX} cy={targetY} r="4" fill="#ff3344" />
+
+                {/* Target HUD Label Box */}
+                <g transform={`translate(${Math.min(270, targetX - 50)}, ${Math.max(15, targetY - 32)})`}>
+                  <rect width="105" height="24" fill="#080c10" stroke="#ff3344" strokeWidth="1" rx="0" />
+                  <text x="52" y="11" fill="#ff3344" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+                    ESTIMATED POSITION
+                  </text>
+                  <text x="52" y="20" fill="#e5e7eb" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
+                    {confidence}% CONF | ~{clampedDist.toFixed(1)}m
+                  </text>
+                </g>
+              </g>
+            ) : (
+              <text x="240" y="125" fill="#6b7280" fontSize="10" fontFamily="monospace" textAnchor="middle" fontStyle="italic">
+                SENSING ZONE SECURE (IDLE)
+              </text>
+            )}
+          </svg>
+
+          {/* Bottom Overlay Tag */}
+          <div className="absolute bottom-2 right-2 text-[9px] text-terminal-muted bg-terminal-black/90 px-2 py-0.5 border border-terminal-border">
+            ESTIMATED POSITION (ROUGH RELATIVE)
           </div>
         </div>
 
-        {/* Math Breakdown & Disclaimer */}
+        {/* Mathematical Explanation */}
         <div className="p-2.5 bg-terminal-surface border border-terminal-border text-[11px] text-gray-300">
-          <div className="text-terminal-amber font-bold flex items-center gap-1 mb-1">
-            <Shield className="w-3 h-3" />
+          <div className="text-terminal-amber font-bold flex items-center gap-1.5 mb-0.5 text-xs">
+            <Shield className="w-3.5 h-3.5 flex-shrink-0" />
             ROUGH RELATIVE LOCALIZATION NOTE:
           </div>
           <div className="text-[10px] text-terminal-muted leading-relaxed">
-            Position is calculated by comparing shockwave falloff across probe baseline (ADXL-01: {s1Rms}g vs ADXL-02: {s2Rms}g) and intersecting with the 24GHz mmWave radar distance gate. This provides rough tactical bearing, not precise GPS.
+            Position is determined by computing differential soil attenuation between Probe A ({s1Rms.toFixed(3)}g) and Probe B ({s2Rms.toFixed(3)}g) across the {spacing}m baseline, intersected with the 24GHz radar range gate (~{clampedDist.toFixed(1)}m).
           </div>
         </div>
 

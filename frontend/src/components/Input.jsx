@@ -12,9 +12,9 @@ export const Input = ({
   ...props
 }) => {
   return (
-    <div className={`relative flex items-center bg-terminal-black border border-terminal-border focus-within:border-terminal-green px-3 py-2 ${className}`}>
+    <div className={`relative flex items-center bg-terminal-black border border-terminal-border focus-within:border-terminal-green px-3 py-2 transition-colors ${className}`}>
       {prompt && (
-        <span className="font-mono text-xs text-terminal-green mr-2 select-none font-bold">
+        <span className="font-mono text-sm text-terminal-green mr-2 select-none font-bold flex-shrink-0">
           {prompt}
         </span>
       )}
@@ -25,7 +25,7 @@ export const Input = ({
         onKeyDown={onKeyPress}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full bg-transparent font-mono text-sm text-gray-100 placeholder-terminal-muted focus:outline-none"
+        className="w-full flex-1 bg-transparent font-mono text-sm text-gray-100 placeholder-terminal-muted focus:outline-none"
         {...props}
       />
     </div>
