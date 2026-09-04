@@ -6,6 +6,9 @@
  * with existing digital OSINT threat intelligence (/api/breach-check).
  */
 
+// Auto-load .env configuration if present (native Node.js 20+)
+try { if (process.loadEnvFile) process.loadEnvFile(); } catch (e) {}
+
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
