@@ -70,20 +70,77 @@ router.post('/breach-check', async (req, res) => {
   console.log(`[OSINT] Query received for exposure check: "${cleanQuery}"`);
 
   // Check if an external API key (e.g. LEAKOSINT_API_KEY) is configured
-  if (process.env.LEAKOSINT_API_KEY) {
+  if (process.env.LEAKOSINT_API_KEY && process.env.LEAKOSINT_API_KEY.trim()) {
+    const apiUrl = (process.env.LEAKOSINT_API_URL || 'https://leakosintapi.com/').trim();
     try {
-      const externalRes = await fetch('https://leak-osint.org/api/search', {
+      const sanitizedLimit = Math.max(100, Math.min(Number(limit) || 100, 10000));
+      const externalRes = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: process.env.LEAKOSINT_API_KEY,
+          token: process.env.LEAKOSINT_API_KEY.trim(),
           request: cleanQuery,
-          limit: limit,
-          lang: lang
+          limit: sanitizedLimit,
+          lang: lang || 'en'
         })
       });
+
       if (externalRes.ok) {
         const externalData = await externalRes.json();
+
+        // Check if upstream returned an error or cooldown
+        if (externalData.error || externalData['Error code'] || externalData.Status === 'Error') {
+          const errMsg = externalData.error || externalData['Error code'] || 'Upstream breach service reported an error';
+          console.warn('[OSINT] Upstream reported:', errMsg);
+          return res.status(200).json({
+            error: errMsg
+          });
+        }
+
+        // Normalize response so all frontend badges, counts, and search time render accurately
+        if (externalData.List) {
+          const list = externalData.List;
+          const dbKeys = Object.keys(list);
+
+          // Handle upstream "No results found" pseudo-database response
+          const isNoResults = dbKeys.length === 0 ||
+            (dbKeys.length === 1 && dbKeys[0].toLowerCase().includes('no results'));
+
+          const elapsedSec = (Date.now() - startTime) / 1000;
+
+          if (isNoResults) {
+            return res.json({
+              NumOfDatabase: 0,
+              NumOfResults: 0,
+              'search time': externalData['search time'] ? Number(externalData['search time']) : Number(elapsedSec.toFixed(3)),
+              free_requests_left: externalData.free_requests_left ?? 40,
+              List: {}
+            });
+          }
+
+          let totalRecords = 0;
+
+          for (const dbName of dbKeys) {
+            const dbItem = list[dbName];
+            const recCount = Array.isArray(dbItem.Data) ? dbItem.Data.length : 0;
+            totalRecords += recCount;
+            if (typeof dbItem.NumOfResults === 'undefined') {
+              dbItem.NumOfResults = recCount;
+            }
+            if (!dbItem.InfoLeak) {
+              dbItem.InfoLeak = 'Extracted from aggregated dark-web breach intelligence repository.';
+            }
+          }
+
+          return res.json({
+            NumOfDatabase: externalData.NumOfDatabase ?? Object.keys(list).length,
+            NumOfResults: externalData.NumOfResults ?? totalRecords,
+            'search time': externalData['search time'] ? Number(externalData['search time']) : Number(elapsedSec.toFixed(3)),
+            free_requests_left: externalData.free_requests_left ?? 40,
+            List: list
+          });
+        }
+
         return res.json(externalData);
       }
     } catch (err) {
